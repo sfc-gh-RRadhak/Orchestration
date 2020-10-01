@@ -1,0 +1,16 @@
+{ 
+  "account":"aws_cas2",
+  "warehouse":"RADX_WH",
+  "database":"dev_plt_common_db",
+  "schema":"util", 
+  "role": "SYSADMIN",
+  "debug":"true" ,
+  "username":"RRadhak",
+  "password":"********",
+  "stage": "dev_plt_common_db.util.account_usage_stg",
+  "environment":"dev",
+  "connection_method":"1",
+  "PrivateKeyPhrase":"******",
+  "PrivateKeyLocation":"/Users/rradhakrishnam/rsa_key.p8"
+  
+}

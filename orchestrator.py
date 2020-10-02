@@ -39,15 +39,17 @@ def main():
     if len(vars(args)) > 0 :
         load_config=f'{file_path}/{args.load_config}' 
         print ("load_config-->",load_config)
-        #config=read_config(load_config)
-        with open(load_config) as file:
-            object_list=yaml.load(file,Loader=yaml.FullLoader)
-         
-        for items in object_list['operation']:
-             print("------")
-             print(items['script'])
-             os.system(items['script'])
-
+        try:
+            with open(load_config) as file:
+                object_list=yaml.load(file,Loader=yaml.FullLoader)
+            
+            for items in object_list['operation']:
+                print("------")
+                print(items['script'])
+                os.system(items['script'])
+        except Exception as e:
+            print(f"error in orchestrator :  Error Code {str(e)} ")
+              
     else:
         print("No parameter supplied")
    

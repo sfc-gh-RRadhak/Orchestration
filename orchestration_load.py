@@ -124,8 +124,6 @@ class Orchestration_Load():
                     self.data_load_snowflake(dbconn,parameter)
             else:
                 # Data is loaded from the raw to the presentation layer 
-                #dbconfig=parameter['dbconfig']
-                #connection=self.read_config(dbconfig)
                 dbconn=SnowflakeDB(config=parameter)
                 self.log.info(f"parameter---> {parameter}") 
                 self.log.info("entering reqular load") 
@@ -138,24 +136,44 @@ class Orchestration_Load():
 
     def load_execution(self,dbconn,parameter):
         try:
+            stored_proc_list=['storedproc','storedprocedure']
             file_name=get_file_name(parameter)
             parameter['fileName']=file_name
             load_sql_file_path=f"{parameter['file_path']}/{parameter['load_sql']}"
             self.log.info("load_sql_file_path-->{load_sql_file_path}")
             print("parameter-->",parameter)
+            sql=''
+            is_procedure=0 # looking for the procedure keyword
+
             with open( load_sql_file_path,"r") as f:
-                sql=str(f.read()).format(**parameter)
-                print (sql)
-            
+                if parameter['load_type'].lower() in stored_proc_list:
+                    lines = f.readlines() 
+                    for line in lines:
+                         
+                        if str('create or replace procedure').strip().upper()  in line.strip().upper():
+                            is_procedure=1  # first time it found the create or replace procedure
+                            sql=sql+line.format(**parameter)
+                        if is_procedure==0: #Reqular lines before the create or replace procedure
+                            sql=sql+line .format(**parameter)
+                        elif is_procedure==1 and str('create or replace procedure').strip().upper() not in line.strip().upper(): # now processing the rest of the lines
+                            sql=sql+line
+                else:
+                    sql=str(f.read()).format(**parameter)
+             
             self.log.info("********parameter********>")
             self.log.info(f'parameter-->{parameter}')
             self.log.info(sql)
             self.log.info("****************")
             
-            sql_list=sql.split(';')
-            for sql in sql_list:
-                dbconn.execute(sql)
-                #print("sql-->",sql)
+            if parameter['load_type'].lower()=='execute':
+                sql_list=sql.split(';')
+                for sql in sql_list:
+                    dbconn.execute(sql)
+            elif parameter['load_type'].lower() in stored_proc_list:
+                print("parameter['load_type']-->",parameter['load_type'].lower()) 
+                dbconn.execute_stream(sql) 
+            else:
+                 self.log.info(f"""{parameter['load_type']}  is not present in the yaml""")
 
         except Exception as e:
             self.log.error(f"error in load_execution :  Error Code {str(e)} ")
@@ -169,11 +187,9 @@ class Orchestration_Load():
             #config=self.read_config(parameter['config'])
             #self.log.info(f'config --> {config}') 
             load=parameter['load']
-             
             with open(parameter['config']) as file:
                 object_list=yaml.load(file,Loader=yaml.FullLoader)
-            #print ("object_list--->",object_list[load]['operation'])
-            
+
             operation_list= object_list[load]['operation']
             print(operation_list)
             copy_list = sorted(operation_list, key=itemgetter('step'))
@@ -187,7 +203,8 @@ class Orchestration_Load():
                         s['load_sql']=i['load_sql']
                         l.append(s)
                     ll.append(l)
-            print ('ll',ll)
+            #print ('ll',ll)
+             
             for item in ll:
                 for i in item:
                     parameter['load_type']=i['load_type']
@@ -246,7 +263,7 @@ python3 orchestration_load.py dimension config/chargeback/config.json --load_con
 python3 orchestration_load.py fact config/chargeback/config.json --load_config 'config/chargeback/fact.yaml'
 
 Monitoring :
-python3 orchestration_load.py acquisition config/monitoring/config.json --minutes 20 --load_config config/monitoring/acquisition.json --source_db_config config/monitoring/source_config.json --logfilepath /Users/sam.andersonmckesson.com/code/log/
+python3 orchestration_load.py acquisition config/monitoring/config.json --minutes 20 --load_config config/monitoring/acquisition.json --source_db_config config/monitoring/source_config.json --logfilepath /Users/rradhakrishnam/Desktop/code/log/
 
 """
 

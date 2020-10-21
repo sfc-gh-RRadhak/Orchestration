@@ -2,6 +2,7 @@ import json
 import datetime
 import snowflake.connector
 import base64
+import pyodbc
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.primitives.asymmetric import dsa
@@ -186,6 +187,11 @@ class SnowflakeDB():
     def execute(self, sql):
         self.log_message(sql)
         self.cur.execute(sql)
+    
+    def execute_stream(self, sql):
+        self.log_message(sql)
+        self.con.execute_stream(sql)
+    
 
     def fetchall(self, sql):
         self.log_message(sql)
